@@ -1,6 +1,9 @@
 ﻿using ApiFinanceiro.Dtos;
+using ApiFinanceiro.Exceptions;
 using ApiFinanceiro.Models;
+using ApiFinanceiro.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ApiFinanceiro.Controllers
@@ -9,121 +12,100 @@ namespace ApiFinanceiro.Controllers
     [ApiController]
     public class ReceitaController : ControllerBase
     {
-        private static List<Receita> listaReceitas = new()
+        private readonly ReceitaService _receitaService;
+        public ReceitaController(ReceitaService receitaService)
         {
-            new Receita
-            {
-                Descricao = "Salário",
-                Valor = 3500.00m,
-                DataPrevisao = new DateOnly(2026, 3, 5),
-                DataRecebimento = new DateOnly(2026, 3, 5),
-                Categoria = "Salário",
-                Observacao = "Pagamento mensal da empresa",
-                Situacao = "Recebido"
-            },
-            new Receita
-            {
-                Descricao = "Freelance Website",
-                Valor = 1200.00m,
-                DataPrevisao = new DateOnly(2026, 3, 10),
-                DataRecebimento = new DateOnly(2026, 3, 12),
-                Categoria = "Freelance",
-                Observacao = "Desenvolvimento de site para cliente",
-                Situacao = "Recebido"
-            },
-            new Receita
-            {
-                Descricao = "Dividendos",
-                Valor = 320.50m,
-                DataPrevisao = new DateOnly(2026, 3, 20),
-                DataRecebimento = new DateOnly(2026, 3, 20),
-                Categoria = "Investimentos",
-                Observacao = "Dividendos de ações",
-                Situacao = "Recebido"
-            },
-            new Receita
-            {
-                Descricao = "Aluguel",
-                Valor = 900.00m,
-                DataPrevisao = new DateOnly(2026, 3, 25),
-                DataRecebimento = new DateOnly(2026, 3, 25),
-                Categoria = "Imóveis",
-                Observacao = "Aluguel da casa",
-                Situacao = "Recebido"
-            }
-        };
+            _receitaService = receitaService;
+        }
 
         [HttpGet()]
-        public ActionResult FindAll()
+        public async Task<IActionResult> FindAll()
         {
-            return Ok(listaReceitas);
+            try
+            {
+                var listaReceitas = await _receitaService.FindAll();
+                return Ok(listaReceitas);
+            }
+            catch (ErrorServiceException ex)
+            {
+                return ex.ToActionResult(this);
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
 
         [HttpPost()]
-        public ActionResult Create([FromBody]ReceitaDto novaReceita)
+        public async Task<IActionResult> Create([FromBody]ReceitaDto novaReceita)
         {
-            var receita = new Receita
+            try
             {
-                Descricao = novaReceita.Descricao,
-                Valor = novaReceita.Valor,
-                DataPrevisao = novaReceita.DataPrevisao,
-                Categoria = novaReceita.Categoria,
-                Observacao = novaReceita.Observacao,
-                Situacao = "Pendente"
-            };
-
-            listaReceitas.Add(receita);
-
-            return Created("", receita);
+                var receita = await _receitaService.Create(novaReceita);
+                return Created("", receita);
+            }
+            catch (ErrorServiceException ex)
+            {
+                return ex.ToActionResult(this);
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
 
         [HttpGet("{id}")]
-        public ActionResult FindById(Guid id)
+        public async Task<IActionResult> FindById(int id)
         {
-            var receita = listaReceitas.FirstOrDefault(r => r.Id == id);
-
-            if (receita is null)
+            try
             {
-                return NotFound(new { mensagem = $"Receita #{id} não encontrada" });
+                var receita = await _receitaService.FindById(id);
+                return Ok(receita);
             }
-
-            return Ok(receita);
+            catch (ErrorServiceException ex)
+            {
+                return ex.ToActionResult(this);
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
 
         [HttpPut("{id}")]
-        public ActionResult Update(Guid id, [FromBody] ReceitaUpdateDto receitaDto)
+        public async Task<IActionResult> Update(int id, [FromBody] ReceitaUpdateDto receitaDto)
         {
-            var receita = listaReceitas.FirstOrDefault(r => r.Id == id);
-
-            if (receita is null)
+            try
             {
-                return NotFound(new { mensagem = $"Receita #{id} não encontrada" });
+                var receita = await _receitaService.Update(id, receitaDto);
+                return Ok(receita);
             }
-
-            receita.Descricao = receitaDto.Descricao;
-            receita.Valor = receitaDto.Valor;
-            receita.Categoria = receitaDto.Categoria;
-            receita.Observacao = receitaDto.Observacao;
-            receita.Situacao = receitaDto.Situacao;
-            receita.DataRecebimento = receitaDto.DataRecebimento;
-            receita.DataPrevisao = receitaDto.DataPrevisao;
-
-            return Ok(receita);
+            catch (ErrorServiceException ex)
+            {
+                return ex.ToActionResult(this);
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
 
         [HttpDelete("{id}")]
-        public ActionResult Remove(Guid id)
+        public async Task<IActionResult> Remove(int id)
         {
-            var receita = listaReceitas.FirstOrDefault(r => r.Id == id);
-
-            if (receita is null)
+            try
             {
-                return NotFound(new { mensagem = $"Receita #{id} não encontrada" });
+                await _receitaService.Remove(id);
+                return NoContent();
             }
-
-            listaReceitas.Remove(receita);
-
-            return NoContent();
+            catch (ErrorServiceException ex)
+            {
+                return ex.ToActionResult(this);
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
     }
 }

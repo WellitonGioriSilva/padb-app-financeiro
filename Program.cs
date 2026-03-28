@@ -17,6 +17,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<DespesaService>();
+builder.Services.AddScoped<ReceitaService>();
 
 var app = builder.Build();
 

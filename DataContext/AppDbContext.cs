@@ -10,5 +10,6 @@ namespace ApiFinanceiro.DataContext
         }
 
         public DbSet<Despesa> Despesas { get; set; }
+        public DbSet<Receita> Receitas { get; set; }
     }
 }
