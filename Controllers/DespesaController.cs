@@ -1,7 +1,11 @@
 ﻿using ApiFinanceiro.Dtos;
+using ApiFinanceiro.Exceptions;
 using ApiFinanceiro.Models;
+using ApiFinanceiro.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Runtime.CompilerServices;
 
 namespace ApiFinanceiro.Controllers
 {
@@ -9,99 +13,122 @@ namespace ApiFinanceiro.Controllers
     [ApiController]
     public class DespesaController : ControllerBase
     {
-        private static List<Despesa> listaDespesas = new()
+        private readonly DespesaService _despesaService;
+
+        public DespesaController(DespesaService despesaService)
         {
-            new Despesa {
-                Descricao = "Internet",
-                Valor = 150, Categoria = "Moradia",
-                DataVencimento = new DateOnly(2026, 03, 15),
-                Situacao = "Aberto"
-            },
-            new Despesa {
-                Descricao = "Caerd",
-                Valor = 45, Categoria = "Moradia",
-                DataVencimento = new DateOnly(2026, 03, 10),
-                Situacao = "Aberto"
-            },
-            new Despesa {
-                Descricao = "Energisa",
-                Valor = 245, Categoria = "Moradia",
-                DataVencimento = new DateOnly(2026, 03, 09),
-                Situacao = "Aberto"
-            }
-        };
+            _despesaService = despesaService;
+        }
 
         [HttpGet()]
-        public ActionResult FindAll()
+        public async Task<IActionResult> FindAll()
         {
-            return Ok(listaDespesas);
+            try
+            {
+                var listaDespesas = await _despesaService.FindAll();
+                return Ok(listaDespesas);
+            }
+            catch (ErrorServiceException ex)
+            {
+                return ex.ToActionResult(this);
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
 
         [HttpPost()]
-        public ActionResult Create([FromBody]DespesaDto novaDespesa)
+        public async Task<IActionResult> Create([FromBody] DespesaDto novaDespesa)
         {
-            var despesa = new Despesa
+            try
             {
-                Descricao = novaDespesa.Descricao,
-                Valor = novaDespesa.Valor,
-                Categoria = novaDespesa.Categoria,
-                DataVencimento = novaDespesa.DataVencimento,
-                Situacao = "Pendente"
-            };
+                var despesa = await _despesaService.Create(novaDespesa);
 
-            listaDespesas.Add(despesa);
-
-            return Created("", despesa);
+                return Created("", despesa);
+            }
+            catch (ErrorServiceException ex)
+            {
+                return ex.ToActionResult(this);
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
 
         [HttpGet("{id}")]
-        public ActionResult FindById(Guid id)
+        public async Task<IActionResult> FindById(int id)
         {
-            var despesa = listaDespesas.FirstOrDefault(d => d.Id == id);
-
-            if (despesa is null)
+            try
             {
-                return NotFound(new { mensagem = $"Despesa #{id} não encontrada" });
-            }
+                var despesa = await _despesaService.FindById(id);
 
-            return Ok(despesa);
+                return Ok(despesa);
+            }
+            catch (ErrorServiceException ex)
+            {
+                return ex.ToActionResult(this);
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
 
         [HttpPut("{id}")]
-        public ActionResult Update(Guid id, [FromBody] DespesaUpdateDto despesaDto)
+        public async Task<IActionResult> Update(int id, [FromBody] DespesaUpdateDto despesaDto)
         {
-            var despesa = listaDespesas.FirstOrDefault(d => d.Id == id);
-
-            if (despesa is null)
+            try
             {
-                return NotFound(new { mensagem = $"Despesa #{id} não encontrada" });
+                var despesa = await _despesaService.Update(id, despesaDto);
+                return Ok(despesa);
             }
-
-            var dataPagamento = new DateTime(despesaDto.DataPagamento.Year, despesaDto.DataPagamento.Month, despesaDto.DataPagamento.Day);
-
-            despesa.Descricao = despesaDto.Descricao;
-            despesa.Valor = despesaDto.Valor;
-            despesa.DataVencimento = despesaDto.DataVencimento;
-            despesa.Categoria = despesaDto.Categoria;
-            despesa.Situacao = despesaDto.Situacao;
-            despesa.DataPagamento = dataPagamento;
-
-            return Ok(despesa);
+            catch (ErrorServiceException ex)
+            {
+                return ex.ToActionResult(this);
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
 
         [HttpDelete("{id}")]
-        public ActionResult Remove(Guid id)
+        public async Task<IActionResult> Remove(int id)
         {
-            var despesa = listaDespesas.FirstOrDefault(d => d.Id == id);
-
-            if (despesa is null)
+            try
             {
-                return NotFound(new { mensagem = $"Despesa #{id} não encontrada" });
+                _despesaService?.Remove(id);
+
+                return NoContent();
             }
-
-            listaDespesas.Remove(despesa);
-
-            return NoContent();
+            catch (ErrorServiceException ex)
+            {
+                return ex.ToActionResult(this);
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
+
+        //[HttpPost("{id}/pagamento")]
+        //public ActionResult Pay([FromBody] DespesaDto novaDespesa)
+        //{
+
+        //    var despesa = new Despesa
+        //    {
+        //        Descricao = novaDespesa.Descricao,
+        //        Valor = novaDespesa.Valor,
+        //        Categoria = novaDespesa.Categoria,
+        //        DataVencimento = novaDespesa.DataVencimento,
+        //        Situacao = "Pendente"
+        //    };
+
+        //    listaDespesas.Add(despesa);
+
+        //    return Created("", despesa);
+        //}
     }
 }
