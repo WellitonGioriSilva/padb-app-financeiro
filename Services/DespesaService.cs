@@ -2,6 +2,7 @@
 using ApiFinanceiro.Dtos;
 using ApiFinanceiro.Exceptions;
 using ApiFinanceiro.Models;
+using AutoMapper;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,9 +13,12 @@ namespace ApiFinanceiro.Services
     {
         private readonly AppDbContext _context;
 
-        public DespesaService(AppDbContext context)
+        private readonly IMapper _mapper;
+
+        public DespesaService(AppDbContext context, IMapper mapper)
         {
             _context = context; 
+            _mapper = mapper;
         }
 
         public async Task<ICollection<Despesa>> FindAll()
@@ -32,14 +36,7 @@ namespace ApiFinanceiro.Services
         {
             try
             {
-                var despesa = new Despesa
-                {
-                    Descricao = novaDespesa.Descricao,
-                    Valor = novaDespesa.Valor,
-                    Categoria = novaDespesa.Categoria,
-                    DataVencimento = novaDespesa.DataVencimento,
-                    Situacao = "Pendente"
-                };
+                var despesa = _mapper.Map<Despesa>(novaDespesa);
 
 
                 await _context.Despesas.AddAsync(despesa);
@@ -70,15 +67,7 @@ namespace ApiFinanceiro.Services
             {
                 var despesa = await FindById(id);
 
-                var dataPagamento = new DateTime(despesaDto.DataPagamento.Year, despesaDto.DataPagamento.Month, despesaDto.DataPagamento.Day);
-                var dataVencimento = new DateTime(despesaDto.DataVencimento.Year, despesaDto.DataVencimento.Month, despesaDto.DataVencimento.Day);
-
-                despesa.Descricao = despesaDto.Descricao;
-                despesa.Valor = despesaDto.Valor;
-                despesa.DataVencimento = despesaDto.DataVencimento;
-                despesa.Categoria = despesaDto.Categoria;
-                despesa.Situacao = despesaDto.Situacao;
-                despesa.DataPagamento = dataPagamento;
+                _mapper.Map<DespesaUpdateDto, Despesa>(despesaDto, despesa);
 
                 _context.Despesas.Update(despesa);
                 await _context.SaveChangesAsync();
